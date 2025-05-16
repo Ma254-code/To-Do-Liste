@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Notizen System</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+  body {
+    font-family: 'Inter', sans-serif;
+    margin: 0; padding: 0;
+    background: #f0f4f8;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  header {
+    background: #4a90e2;
+    color: white;
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  header h1 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 1.5rem;
+  }
+
+  button, input[type="button"] {
+    background: #357ABD;
+    border: none;
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+
+  button:hover, input[type="button"]:hover {
+    background: #285e9e;
+  }
+
+  main {
+    flex-grow: 1;
+    padding: 2rem;
+    max-width: 700px;
+    margin: auto;
+    width: 90%;
+  }
+
+  #notesList, #privateNotes {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    resize: vertical;
+    font-size: 1rem;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .note-item {
+    background: white;
+    padding: 1rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
+  }
+
+  .note-item pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  footer {
+    background: #4a90e2;
+    color: white;
+    padding: 1rem 2rem;
+    text-align: center;
+  }
+
+  /* Modal Styles */
+  .modal-bg {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+  }
+
+  .modal-bg.active {
+    display: flex;
+  }
+
+  .modal {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    width: 320px;
+    max-width: 90vw;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    text-align: center;
+  }
+
+  .modal h2 {
+    margin-top: 0;
+  }
+
+  .user-select {
+    display: flex;
+    justify-content: space-around;
+    margin: 1.5rem 0;
+  }
+
+  .user-select button {
+    background: #4a90e2;
+    width: 100px;
+  }
+
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .login-form input[type="password"] {
+    padding: 0.8rem;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+  }
+
+  .login-form input[type="submit"] {
+    background: #357ABD;
+    cursor: pointer;
+  }
+
+  .login-error {
+    color: red;
+    font-weight: 600;
+  }
+
+  /* Navigation link */
+  .nav-link {
+    margin-top: 1rem;
+    display: inline-block;
+    color: #4a90e2;
+    cursor: pointer;
+    font-weight: 600;
+    text-decoration: underline;
+  }
+
+  .nav-link:hover {
+    color: #285e9e;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Notizen System</h1>
+  <button id="btnPrivat">Privat</button>
+</header>
+
+<main>
+  <section id="publicSection">
+    <h2>Öffentliche Notizen</h2>
+    <textarea id="publicNoteInput" placeholder="Hier öffentliche Notiz schreiben..."></textarea>
+    <button id="savePublicNote">Speichern</button>
+    <div id="notesList"></div>
+  </section>
+
+  <section id="privateSection" style="display:none;">
+    <h2>Private Notizen von <span id="privateUserName"></span></h2>
+    <textarea id="privateNoteInput" placeholder="Hier private Notiz schreiben..."></textarea>
+    <button id="savePrivateNote">Speichern</button>
+    <div id="privateNotes"></div>
+    <div class="nav-link" id="backToHomeFromPrivate">Zurück zur Startseite</div>
+  </section>
+</main>
+
+<footer>
+  &copy; 2025 Notizen System
+</footer>
+
+<!-- Modal Fenster -->
+<div class="modal-bg" id="modalUserSelect">
+  <div class="modal">
+    <h2>Privatbereich - Login</h2>
+    <div class="user-select">
+      <button data-user="Marlon">Marlon</button>
+      <button data-user="Mats">Mats</button>
+    </div>
+    <div id="loginFormContainer" style="display:none;">
+      <form id="loginForm" class="login-form">
+        <label for="passwordInput">Passwort für <span id="loginUser"></span>:</label>
+        <input type="password" id="passwordInput" required />
+        <input type="submit" value="Login" />
+        <div class="login-error" id="loginError" style="display:none;">Falsches Passwort!</div>
+      </form>
+    </div>
+    <div class="nav-link" id="closeModal">Abbrechen</div>
+  </div>
+</div>
+
+<script>
+  const btnPrivat = document.getElementById('btnPrivat');
+  const modalUserSelect = document.getElementById('modalUserSelect');
+  const userButtons = modalUserSelect.querySelectorAll('button[data-user]');
+  const loginFormContainer = document.getElementById('loginFormContainer');
+  const loginForm = document.getElementById('loginForm');
+  const passwordInput = document.getElementById('passwordInput');
+  const loginUserSpan = document.getElementById('loginUser');
+  const loginError = document.getElementById('loginError');
+  const closeModal = document.getElementById('closeModal');
+
+  const publicSection = document.getElementById('publicSection');
+  const privateSection = document.getElementById('privateSection');
+  const privateUserNameSpan = document.getElementById('privateUserName');
+
+  const notesList = document.getElementById('notesList');
+  const privateNotesDiv = document.getElementById('privateNotes');
+
+  const publicNoteInput = document.getElementById('publicNoteInput');
+  const savePublicNoteBtn = document.getElementById('savePublicNote');
+
+  const privateNoteInput = document.getElementById('privateNoteInput');
+  const savePrivateNoteBtn = document.getElementById('savePrivateNote');
+
+  const backToHomeFromPrivate = document.getElementById('backToHomeFromPrivate');
+
+  let currentUser = null;
+
+  // Passwörter
+  const passwords = {
+    'Marlon': 'Marlon',
+    'Mats': 'Mats'
+  };
+
+  // --- Funktionen ---
+
+  // Notizen laden
+  function loadNotes() {
+    // Öffentliche Notizen
+    const publicNotes = JSON.parse(localStorage.getItem('publicNotes') || '[]');
+    notesList.innerHTML = '';
+    if (publicNotes.length === 0) {
+      notesList.innerHTML = '<p>Keine öffentlichen Notizen.</p>';
+    } else {
+      publicNotes.forEach(note => {
+        const div = document.createElement('div');
+        div.classList.add('note-item');
+        div.innerHTML = `<pre>${note}</pre>`;
+        notesList.appendChild(div);
+      });
+    }
+  }
+
+  // Private Notizen laden
+  function loadPrivateNotes(user) {
+    const key = `privateNotes_${user}`;
+    const privateNotes = JSON.parse(localStorage.getItem(key) || '[]');
+    privateNotesDiv.innerHTML = '';
+    if (privateNotes.length === 0) {
+      privateNotesDiv.innerHTML = '<p>Keine privaten Notizen.</p>';
+    } else {
+      privateNotes.forEach(note => {
+        const div = document.createElement('div');
+        div.classList.add('note-item');
+        div.innerHTML = `<pre>${note}</pre>`;
+        privateNotesDiv.appendChild(div);
+      });
+    }
+  }
+
+  // Öffentliche Notiz speichern
+  savePublicNoteBtn.addEventListener('click', () => {
+    const text = publicNoteInput.value.trim();
+    if (!text) return alert('Bitte eine Notiz eingeben.');
+    const notes = JSON.parse(localStorage.getItem('publicNotes') || '[]');
+    notes.push(text);
+    localStorage.setItem('publicNotes', JSON.stringify(notes));
+    publicNoteInput.value = '';
+    loadNotes();
+  });
+
+  // Private Notiz speichern
+  savePrivateNoteBtn.addEventListener('click', () => {
+    if (!currentUser) return;
+    const text = privateNoteInput.value.trim();
+    if (!text) return alert('Bitte eine Notiz eingeben.');
+    const key = `privateNotes_${currentUser}`;
+    const notes = JSON.parse(localStorage.getItem(key) || '[]');
+    notes.push(text);
+    localStorage.setItem(key, JSON.stringify(notes));
+    privateNoteInput.value = '';
+    loadPrivateNotes(currentUser);
+  });
+
+  // Privat Button öffnet Modal
+  btnPrivat.addEventListener('click', () => {
+    modalUserSelect.classList.add('active');
+    loginFormContainer.style.display = 'none';
+    loginError.style.display = 'none';
+  });
+
+  // Nutzer auswählen -> Passwortabfrage zeigen
+  userButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      loginUserSpan.textContent = btn.dataset.user;
+      loginFormContainer.style.display = 'block';
+      passwordInput.value = '';
+      passwordInput.focus();
+      loginError.style.display = 'none';
+    });
+  });
+
+  // Login Formular absenden
+  loginForm.addEventListener('submit', e => {
+    e.preventDefault();
+    const user = loginUserSpan.textContent;
+    const pw = passwordInput.value;
+    if (passwords[user] === pw) {
+      currentUser = user;
+      modalUserSelect.classList.remove('active');
+      showPrivateNotes(user);
+    } else {
+      loginError.style.display = 'block';
+    }
+  });
+
+  // Modal abbrechen
+  closeModal.addEventListener('click', () => {
+    modalUserSelect.classList.remove('active');
+  });
+
+  // Private Notizen anzeigen, öffentlich verstecken
+  function showPrivateNotes(user) {
+    privateUserNameSpan.textContent = user;
+    privateSection.style.display = 'block';
+    publicSection.style.display = 'none';
+    loadPrivateNotes(user);
+  }
+
+  // Zurück zur Startseite
+  backToHomeFromPrivate.addEventListener('click', () => {
+    currentUser = null;
+    privateSection.style.display = 'none';
+    publicSection.style.display = 'block';
+    loadNotes();
+  });
+
+  // Initial
+  loadNotes();
+
+</script>
+</body>
+</html>
