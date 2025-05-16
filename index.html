@@ -32,7 +32,7 @@
     font-size: 1.5rem;
   }
 
-  button, input[type="button"] {
+  button, input[type="button"], .delete-btn {
     background: #357ABD;
     border: none;
     color: white;
@@ -43,7 +43,7 @@
     transition: background-color 0.3s ease;
   }
 
-  button:hover, input[type="button"]:hover {
+  button:hover, input[type="button"]:hover, .delete-btn:hover {
     background: #285e9e;
   }
 
@@ -77,12 +77,25 @@
     padding: 1rem;
     border-radius: 10px;
     box-shadow: 0 2px 8px rgb(0 0 0 / 0.1);
-  }
-
-  .note-item pre {
-    margin: 0;
+    position: relative;
     white-space: pre-wrap;
     word-wrap: break-word;
+  }
+
+  .delete-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: #e94e4e;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .delete-btn:hover {
+    background: #c83c3c;
   }
 
   footer {
@@ -254,24 +267,30 @@
 
   // --- Funktionen ---
 
-  // Notizen laden
+  // Notizen laden & anzeigen (Öffentlich)
   function loadNotes() {
-    // Öffentliche Notizen
     const publicNotes = JSON.parse(localStorage.getItem('publicNotes') || '[]');
     notesList.innerHTML = '';
     if (publicNotes.length === 0) {
       notesList.innerHTML = '<p>Keine öffentlichen Notizen.</p>';
     } else {
-      publicNotes.forEach(note => {
+      publicNotes.forEach((note, i) => {
         const div = document.createElement('div');
         div.classList.add('note-item');
-        div.innerHTML = `<pre>${note}</pre>`;
+        div.innerHTML = `<pre>${note}</pre><button class="delete-btn" data-index="${i}">Löschen</button>`;
         notesList.appendChild(div);
       });
     }
+    // Delete Buttons Event
+    notesList.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.onclick = () => {
+        const idx = +btn.dataset.index;
+        deletePublicNote(idx);
+      };
+    });
   }
 
-  // Private Notizen laden
+  // Private Notizen laden & anzeigen
   function loadPrivateNotes(user) {
     const key = `privateNotes_${user}`;
     const privateNotes = JSON.parse(localStorage.getItem(key) || '[]');
@@ -279,13 +298,20 @@
     if (privateNotes.length === 0) {
       privateNotesDiv.innerHTML = '<p>Keine privaten Notizen.</p>';
     } else {
-      privateNotes.forEach(note => {
+      privateNotes.forEach((note, i) => {
         const div = document.createElement('div');
         div.classList.add('note-item');
-        div.innerHTML = `<pre>${note}</pre>`;
+        div.innerHTML = `<pre>${note}</pre><button class="delete-btn" data-index="${i}">Löschen</button>`;
         privateNotesDiv.appendChild(div);
       });
     }
+    // Delete Buttons Event
+    privateNotesDiv.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.onclick = () => {
+        const idx = +btn.dataset.index;
+        deletePrivateNote(user, idx);
+      };
+    });
   }
 
   // Öffentliche Notiz speichern
@@ -311,6 +337,27 @@
     privateNoteInput.value = '';
     loadPrivateNotes(currentUser);
   });
+
+  // Löschen Öffentliche Notiz
+  function deletePublicNote(index) {
+    const notes = JSON.parse(localStorage.getItem('publicNotes') || '[]');
+    if (index >= 0 && index < notes.length) {
+      notes.splice(index, 1);
+      localStorage.setItem('publicNotes', JSON.stringify(notes));
+      loadNotes();
+    }
+  }
+
+  // Löschen Private Notiz
+  function deletePrivateNote(user, index) {
+    const key = `privateNotes_${user}`;
+    const notes = JSON.parse(localStorage.getItem(key) || '[]');
+    if (index >= 0 && index < notes.length) {
+      notes.splice(index, 1);
+      localStorage.setItem(key, JSON.stringify(notes));
+      loadPrivateNotes(user);
+    }
+  }
 
   // Privat Button öffnet Modal
   btnPrivat.addEventListener('click', () => {
