@@ -1,530 +1,276 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Notizsystem</title>
-<style>
-  /* Grundstyles */
-  body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    margin: 0; padding: 0;
-    display: flex; flex-direction: column; align-items: center;
-    min-height: 100vh; color: #fff;
-    overflow-x: hidden;
-  }
-  h1 {
-    margin: 1rem 0 0.5rem 0;
-    font-weight: 700;
-    text-shadow: 0 2px 5px rgba(0,0,0,0.4);
-  }
-  button {
-    cursor: pointer;
-    background: #fff;
-    border: none;
-    border-radius: 6px;
-    padding: 0.5rem 1rem;
-    margin: 0.2rem;
-    font-weight: 600;
-    color: #764ba2;
-    box-shadow: 0 3px 6px rgba(0,0,0,0.3);
-    transition: all 0.3s ease;
-  }
-  button:hover {
-    background: #dcd6f7;
-  }
-  input, textarea {
-    border-radius: 6px;
-    border: none;
-    padding: 0.5rem;
-    font-size: 1rem;
-    width: 100%;
-    max-width: 500px;
-    margin-bottom: 1rem;
-    box-shadow: 0 0 10px rgba(255 255 255 / 0.2);
-    background: rgba(255 255 255 / 0.1);
-    color: #fff;
-  }
-  input::placeholder, textarea::placeholder {
-    color: #ddd;
-  }
-  .container {
-    width: 95%;
-    max-width: 600px;
-    margin-bottom: 2rem;
-    background: rgba(0 0 0 / 0.3);
-    padding: 1rem 1.5rem;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-  }
-  #notesContainer, #privateNotesContainer, #adminPinnedList {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    max-height: 350px;
-    overflow-y: auto;
-    padding-right: 5px;
-  }
-  .note {
-    background: #7e57c2cc;
-    padding: 0.7rem 1rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-    position: relative;
-    font-size: 1.1rem;
-    word-wrap: break-word;
-    user-select: text;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    opacity: 0;
-    animation: fadeInUp 0.5s forwards;
-  }
-  .note.pinned {
-    border: 2px solid #ffd700;
-    background: #927fd1cc;
-  }
-  .note button {
-    background: transparent;
-    color: #ffd700;
-    font-weight: 700;
-    font-size: 1.3rem;
-    padding: 0 0.3rem;
-    margin-left: 0.4rem;
-    transition: color 0.3s ease;
-  }
-  .note button:hover {
-    color: #fff;
-  }
-  .pin-btn {
-    color: #ffc107;
-  }
-  .pin-btn.pinned {
-    color: #ffeb3b;
-  }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Notizen</title>
+  <style>
+    :root {
+      --main-bg: linear-gradient(135deg, #89f7fe, #66a6ff);
+      --note-bg: #fff;
+      --note-pinned: #ffe066;
+      --btn-color: #4a4a4a;
+    }
 
-  @keyframes fadeInUp {
-    0% {opacity: 0; transform: translateY(10px);}
-    100% {opacity: 1; transform: translateY(0);}
-  }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background: var(--main-bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+      color: #333;
+      transition: all 0.3s ease;
+    }
 
-  /* Layout Privatbereich */
-  #privateArea, #adminOverlay, #privateLoginOverlay, #privatePasswordOverlay {
-    display: none;
-    flex-direction: column;
-    align-items: center;
-  }
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
 
-  /* Overlay Styles */
-  .overlay {
-    position: fixed;
-    top:0; left:0; right:0; bottom:0;
-    background: rgba(0,0,0,0.85);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 100;
-  }
-  .overlay.active {
-    display: flex;
-  }
-  .overlay .content {
-    background: #442c7f;
-    border-radius: 12px;
-    padding: 2rem;
-    width: 90%;
-    max-width: 400px;
-    text-align: center;
-    box-shadow: 0 0 20px #a88efc;
-    color: #fff;
-  }
-  .overlay input {
-    margin-top: 1rem;
-    font-size: 1.1rem;
-    padding: 0.7rem;
-    width: 80%;
-    max-width: 300px;
-  }
-  .overlay button {
-    margin-top: 1rem;
-  }
+    .input-group {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
 
-  /* Link zurück */
-  .back-btn {
-    margin-top: 1rem;
-    background: transparent;
-    border: 2px solid #fff;
-    color: #fff;
-    font-weight: 600;
-    padding: 0.3rem 0.7rem;
-    border-radius: 6px;
-  }
-  .back-btn:hover {
-    background: #fff;
-    color: #764ba2;
-  }
-</style>
+    input, button {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 8px;
+      transition: transform 0.2s ease;
+    }
+
+    input {
+      width: 250px;
+      max-width: 80vw;
+    }
+
+    button {
+      background-color: var(--btn-color);
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      transform: scale(1.05);
+    }
+
+    .notes {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      width: 100%;
+      max-width: 1000px;
+    }
+
+    .note {
+      background-color: var(--note-bg);
+      padding: 1rem;
+      border-radius: 12px;
+      box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+      position: relative;
+      transition: transform 0.2s ease;
+    }
+
+    .note.pinned {
+      background-color: var(--note-pinned);
+    }
+
+    .note:hover {
+      transform: translateY(-5px);
+    }
+
+    .note button {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      background: red;
+    }
+
+    .note .pin-btn {
+      top: 0.5rem;
+      right: 3rem;
+      background: orange;
+    }
+
+    .area {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 2rem;
+    }
+
+    .note-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .back-btn {
+      margin-top: 1rem;
+    }
+
+  </style>
 </head>
 <body>
+  <h1>📝 Notizen</h1>
 
-<h1>Notizsystem</h1>
-
-<div class="container" id="publicNotesSection">
-  <input id="noteInput" type="text" placeholder="Neue Notiz eingeben..." autocomplete="off" />
-  <button id="addNoteBtn">Notiz hinzufügen</button>
-  <div id="notesContainer"></div>
-</div>
-
-<button id="privatBtn">Privat</button>
-<button id="adminBtn">Adminbereich</button>
-
-<!-- Privat Login Overlay -->
-<div id="privateLoginOverlay" class="overlay">
-  <div class="content">
-    <h2>Privatbereich: Nutzer wählen</h2>
-    <button id="loginMarlonBtn">Marlon</button>
-    <button id="loginMatsBtn">Mats</button>
-    <button id="backFromPrivateLoginBtn" class="back-btn">Zurück</button>
+  <div class="input-group">
+    <input id="noteInput" type="text" placeholder="Neue Notiz eingeben">
+    <button onclick="addNote()">Hinzufügen</button>
+    <button onclick="openPrivateArea()">🔒 Privat</button>
+    <button onclick="openAdmin()">🛠️ Admin</button>
   </div>
-</div>
 
-<!-- Privat Passwort Overlay -->
-<div id="privatePasswordOverlay" class="overlay">
-  <div class="content">
-    <h2 id="privatePasswordUser">Passwort eingeben</h2>
-    <input id="privatePasswordInput" type="password" placeholder="Passwort" autocomplete="off" />
-    <button id="privatePasswordSubmitBtn">Login</button>
-    <button id="backFromPrivatePasswordBtn" class="back-btn">Zurück</button>
+  <div class="notes" id="notesContainer"></div>
+
+  <!-- Privatbereich -->
+  <div class="area" id="privateArea">
+    <h2>Privater Bereich</h2>
+    <button onclick="loginPrivate('Marlon')">Marlon</button>
+    <button onclick="loginPrivate('Mats')">Mats</button>
+    <input id="privatePassword" type="password" placeholder="Passwort">
+    <button onclick="checkPrivateLogin()">Einloggen</button>
+    <button onclick="backToMain()" class="back-btn">⬅️ Zurück</button>
   </div>
-</div>
 
-<!-- Privat Bereich -->
-<div id="privateArea" class="container">
-  <h2 id="privateUserTitle"></h2>
-  <input id="privateNoteInput" type="text" placeholder="Private Notiz hinzufügen..." autocomplete="off" />
-  <button id="addPrivateNoteBtn">Notiz hinzufügen</button>
-  <div id="privateNotesContainer"></div>
-  <button id="backFromPrivateBtn" class="back-btn">Zurück zur Startseite</button>
-</div>
-
-<!-- Admin Overlay -->
-<div id="adminOverlay" class="overlay">
-  <div class="content">
+  <!-- Adminbereich -->
+  <div class="area" id="adminArea">
     <h2>Adminbereich</h2>
-    <input id="adminPasswordInput" type="password" placeholder="Admin Passwort" autocomplete="off" />
-    <button id="adminLoginBtn">Login</button>
-    <button id="adminLogoutBtn" style="display:none;">Logout</button>
-    <div id="adminPinnedList" style="margin-top:1rem; max-height: 300px; overflow-y: auto;"></div>
-    <button id="backFromAdminBtn" class="back-btn">Zurück</button>
+    <input id="adminPassword" type="password" placeholder="Admin Passwort">
+    <button onclick="checkAdminLogin()">Einloggen</button>
+    <div id="adminNotes" class="notes"></div>
+    <button onclick="backToMain()" class="back-btn">⬅️ Zurück</button>
   </div>
-</div>
 
-<script>
-  // Daten
-  let publicNotes = JSON.parse(localStorage.getItem('publicNotes')) || [];
-  let privateNotes = [];
-  let currentPrivateUser = null;
-  let isAdmin = false;
+  <script>
+    const notesContainer = document.getElementById("notesContainer");
+    const noteInput = document.getElementById("noteInput");
+    const privateArea = document.getElementById("privateArea");
+    const adminArea = document.getElementById("adminArea");
+    const privatePassword = document.getElementById("privatePassword");
+    const adminPassword = document.getElementById("adminPassword");
+    const adminNotes = document.getElementById("adminNotes");
 
-  // Elemente
-  const noteInput = document.getElementById('noteInput');
-  const addNoteBtn = document.getElementById('addNoteBtn');
-  const notesContainer = document.getElementById('notesContainer');
+    let privateUser = null;
 
-  const privatBtn = document.getElementById('privatBtn');
-  const privateLoginOverlay = document.getElementById('privateLoginOverlay');
-  const privatePasswordOverlay = document.getElementById('privatePasswordOverlay');
-  const privatePasswordUser = document.getElementById('privatePasswordUser');
-  const privatePasswordInput = document.getElementById('privatePasswordInput');
-  const privatePasswordSubmitBtn = document.getElementById('privatePasswordSubmitBtn');
-  const backFromPrivatePasswordBtn = document.getElementById('backFromPrivatePasswordBtn');
-  const backFromPrivateLoginBtn = document.getElementById('backFromPrivateLoginBtn');
-
-  const loginMarlonBtn = document.getElementById('loginMarlonBtn');
-  const loginMatsBtn = document.getElementById('loginMatsBtn');
-
-  const privateArea = document.getElementById('privateArea');
-  const privateUserTitle = document.getElementById('privateUserTitle');
-  const privateNoteInput = document.getElementById('privateNoteInput');
-  const addPrivateNoteBtn = document.getElementById('addPrivateNoteBtn');
-  const privateNotesContainer = document.getElementById('privateNotesContainer');
-  const backFromPrivateBtn = document.getElementById('backFromPrivateBtn');
-
-  const adminBtn = document.getElementById('adminBtn');
-  const adminOverlay = document.getElementById('adminOverlay');
-  const adminPasswordInput = document.getElementById('adminPasswordInput');
-  const adminLoginBtn = document.getElementById('adminLoginBtn');
-  const adminLogoutBtn = document.getElementById('adminLogoutBtn');
-  const adminPinnedList = document.getElementById('adminPinnedList');
-  const backFromAdminBtn = document.getElementById('backFromAdminBtn');
-
-  // Speicherfunktionen
-  function savePublicNotes() {
-    localStorage.setItem('publicNotes', JSON.stringify(publicNotes));
-  }
-  function savePrivateNotes() {
-    if(currentPrivateUser) {
-      localStorage.setItem(`privateNotes_${currentPrivateUser}`, JSON.stringify(privateNotes));
+    function saveNotes(notes) {
+      localStorage.setItem("notes", JSON.stringify(notes));
     }
-  }
-  function loadPrivateNotes(user) {
-    privateNotes = JSON.parse(localStorage.getItem(`privateNotes_${user}`)) || [];
-  }
 
-  // Notizen anzeigen (öffentlich)
-  function renderPublicNotes() {
-    // Sortiere gepinnte zuerst
-    const sorted = [...publicNotes].sort((a,b) => b.pinned - a.pinned);
-    notesContainer.innerHTML = '';
-    sorted.forEach((note, idx) => {
-      const noteEl = createNoteElement(note, idx, false);
-      notesContainer.appendChild(noteEl);
-    });
-  }
+    function getNotes() {
+      return JSON.parse(localStorage.getItem("notes") || "[]");
+    }
 
-  // Notizen anzeigen (privat)
-  function renderPrivateNotes() {
-    privateNotesContainer.innerHTML = '';
-    privateNotes.forEach((note, idx) => {
-      const noteEl = createNoteElement(note, idx, true);
-      privateNotesContainer.appendChild(noteEl);
-    });
-  }
-
-  // Note Element erstellen
-  // note = {text: string, pinned: bool}
-  // isPrivate = true/false
-  function createNoteElement(note, index, isPrivate){
-    const div = document.createElement('div');
-    div.className = 'note';
-    if(note.pinned) div.classList.add('pinned');
-    div.textContent = note.text;
-
-    // Pin Button nur bei öffentlichen Notizen
-    if(!isPrivate){
-      const pinBtn = document.createElement('button');
-      pinBtn.className = 'pin-btn';
-      pinBtn.title = note.pinned ? 'Anpinnung entfernen' : 'Notiz anpinnen';
-      pinBtn.innerHTML = note.pinned ? '📌' : '📍';
-      if(note.pinned) pinBtn.classList.add('pinned');
-      pinBtn.addEventListener('click', () => {
-        // Finde Originalindex im publicNotes und toggle pin
-        const originalIndex = publicNotes.findIndex(n => n.text === note.text && n.pinned === note.pinned);
-        if(originalIndex !== -1){
-          publicNotes[originalIndex].pinned = !publicNotes[originalIndex].pinned;
-          savePublicNotes();
-          renderPublicNotes();
+    function renderNotes() {
+      const notes = getNotes();
+      notesContainer.innerHTML = "";
+      notes.forEach((note, index) => {
+        if (!note.private) {
+          const div = document.createElement("div");
+          div.className = "note" + (note.pinned ? " pinned" : "");
+          div.innerHTML = `
+            ${note.text}
+            <button onclick="deleteNote(${index})">✖</button>
+            <button class="pin-btn" onclick="togglePin(${index})">📌</button>
+          `;
+          notesContainer.appendChild(div);
         }
       });
-      div.appendChild(pinBtn);
     }
 
-    // Delete Button für alle Notizen (außer Adminbereich löscht nur der Admin gepinnte)
-    const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'delete-btn';
-    deleteBtn.textContent = '✖';
-    deleteBtn.title = 'Notiz löschen';
-    deleteBtn.addEventListener('click', () => {
-      if(isPrivate){
-        privateNotes.splice(index, 1);
-        savePrivateNotes();
-        renderPrivateNotes();
+    function addNote() {
+      const text = noteInput.value.trim();
+      if (!text) return;
+      const notes = getNotes();
+      notes.push({ text, pinned: false, private: false });
+      saveNotes(notes);
+      noteInput.value = "";
+      renderNotes();
+    }
+
+    function deleteNote(index) {
+      const notes = getNotes();
+      notes.splice(index, 1);
+      saveNotes(notes);
+      renderNotes();
+    }
+
+    function togglePin(index) {
+      const notes = getNotes();
+      notes[index].pinned = !notes[index].pinned;
+      saveNotes(notes);
+      renderNotes();
+    }
+
+    function openPrivateArea() {
+      privateArea.style.display = "flex";
+      adminArea.style.display = "none";
+      notesContainer.style.display = "none";
+    }
+
+    function loginPrivate(name) {
+      privateUser = name;
+    }
+
+    function checkPrivateLogin() {
+      const pw = privatePassword.value;
+      if ((privateUser === "Marlon" && pw === "Marlon") || (privateUser === "Mats" && pw === "Mats")) {
+        alert(`Willkommen ${privateUser}`);
       } else {
-        publicNotes.splice(index, 1);
-        savePublicNotes();
-        renderPublicNotes();
+        alert("Falsches Passwort!");
+        return;
       }
-    });
-    div.appendChild(deleteBtn);
-
-    return div;
-  }
-
-  // Öffentliche Notiz hinzufügen
-  addNoteBtn.addEventListener('click', () => {
-    const text = noteInput.value.trim();
-    if(text === '') return alert('Bitte Text eingeben!');
-    publicNotes.push({text, pinned:false});
-    savePublicNotes();
-    renderPublicNotes();
-    noteInput.value = '';
-  });
-
-  // Privat Button öffnet Userauswahl
-  privatBtn.addEventListener('click', () => {
-    showOverlay(privateLoginOverlay);
-  });
-
-  // Privat Login Buttons
-  loginMarlonBtn.addEventListener('click', () => promptPrivatePassword('Marlon'));
-  loginMatsBtn.addEventListener('click', () => promptPrivatePassword('Mats'));
-
-  // Privat Passwort abfragen
-  function promptPrivatePassword(user){
-    hideOverlay(privateLoginOverlay);
-    privatePasswordUser.textContent = `Passwort für ${user}`;
-    privatePasswordInput.value = '';
-    currentPrivateUser = user;
-    showOverlay(privatePasswordOverlay);
-  }
-
-  // Privat Passwort prüfen
-  privatePasswordSubmitBtn.addEventListener('click', () => {
-    const pw = privatePasswordInput.value;
-    if((currentPrivateUser === 'Marlon' && pw === 'Marlon') ||
-       (currentPrivateUser === 'Mats' && pw === 'Mats')){
-      hideOverlay(privatePasswordOverlay);
-      enterPrivateArea(currentPrivateUser);
-    } else {
-      alert('Falsches Passwort!');
     }
-  });
 
-  backFromPrivatePasswordBtn.addEventListener('click', () => {
-    hideOverlay(privatePasswordOverlay);
-    showOverlay(privateLoginOverlay);
-  });
-  backFromPrivateLoginBtn.addEventListener('click', () => {
-    hideOverlay(privateLoginOverlay);
-  });
-
-  // Private Notiz hinzufügen
-  addPrivateNoteBtn.addEventListener('click', () => {
-    const text = privateNoteInput.value.trim();
-    if(text === '') return alert('Bitte Text eingeben!');
-    privateNotes.push({text});
-    savePrivateNotes();
-    renderPrivateNotes();
-    privateNoteInput.value = '';
-  });
-
-  // Zurück Button privat
-  backFromPrivateBtn.addEventListener('click', () => {
-    leavePrivateArea();
-  });
-
-  // Admin Bereich
-  adminBtn.addEventListener('click', () => {
-    showOverlay(adminOverlay);
-  });
-
-  // Admin Login
-  adminLoginBtn.addEventListener('click', () => {
-    const pw = adminPasswordInput.value;
-    if(pw === 'Admin'){
-      isAdmin = true;
-      adminPasswordInput.style.display = 'none';
-      adminLoginBtn.style.display = 'none';
-      adminLogoutBtn.style.display = 'inline-block';
-      adminPasswordInput.value = '';
-      renderAdminPinnedNotes();
-    } else {
-      alert('Falsches Admin-Passwort!');
+    function openAdmin() {
+      adminArea.style.display = "flex";
+      privateArea.style.display = "none";
+      notesContainer.style.display = "none";
     }
-  });
 
-  // Admin Logout
-  adminLogoutBtn.addEventListener('click', () => {
-    isAdmin = false;
-    adminPasswordInput.style.display = 'inline-block';
-    adminLoginBtn.style.display = 'inline-block';
-    adminLogoutBtn.style.display = 'none';
-    adminPinnedList.innerHTML = '';
-  });
-
-  // Zurück Admin
-  backFromAdminBtn.addEventListener('click', () => {
-    hideOverlay(adminOverlay);
-    isAdmin = false;
-    adminPasswordInput.style.display = 'inline-block';
-    adminLoginBtn.style.display = 'inline-block';
-    adminLogoutBtn.style.display = 'none';
-    adminPinnedList.innerHTML = '';
-  });
-
-  // Admin gepinnte Notizen anzeigen und löschen
-  function renderAdminPinnedNotes(){
-    adminPinnedList.innerHTML = '';
-    const pinnedNotes = publicNotes.filter(n => n.pinned);
-    if(pinnedNotes.length === 0){
-      adminPinnedList.innerHTML = '<p style="color:#ddd; font-style:italic;">Keine gepinnten Notizen.</p>';
-      return;
+    function checkAdminLogin() {
+      if (adminPassword.value === "Admin") {
+        const notes = getNotes();
+        adminNotes.innerHTML = "";
+        notes.forEach((note, index) => {
+          if (note.pinned) {
+            const div = document.createElement("div");
+            div.className = "note pinned";
+            div.innerHTML = `
+              ${note.text}
+              <button onclick="adminDelete(${index})">🗑️</button>
+            `;
+            adminNotes.appendChild(div);
+          }
+        });
+      } else {
+        alert("Falsches Admin-Passwort!");
+      }
     }
-    pinnedNotes.forEach((note) => {
-      const div = document.createElement('div');
-      div.className = 'note';
-      div.textContent = note.text;
 
-      const delBtn = document.createElement('button');
-      delBtn.className = 'delete-btn';
-      delBtn.textContent = '✖';
-      delBtn.title = 'Gepinnte Notiz löschen';
-      delBtn.style.color = '#ff5555';
-      delBtn.addEventListener('click', () => {
-        // Index finden und löschen
-        const i = publicNotes.findIndex(n => n.text === note.text && n.pinned);
-        if(i !== -1){
-          publicNotes.splice(i, 1);
-          savePublicNotes();
-          renderAdminPinnedNotes();
-          renderPublicNotes();
-        }
-      });
-      div.appendChild(delBtn);
+    function adminDelete(index) {
+      const notes = getNotes();
+      notes.splice(index, 1);
+      saveNotes(notes);
+      checkAdminLogin(); // reload list
+      renderNotes();
+    }
 
-      adminPinnedList.appendChild(div);
-    });
-  }
+    function backToMain() {
+      privateArea.style.display = "none";
+      adminArea.style.display = "none";
+      notesContainer.style.display = "grid";
+    }
 
-  // Overlay Funktionen
-  function showOverlay(el){ el.classList.add('active'); }
-  function hideOverlay(el){ el.classList.remove('active'); }
-
-  // Privatbereich betreten
-  function enterPrivateArea(user){
-    privatBtn.style.display = 'none';
-    adminBtn.style.display = 'none';
-    noteInput.style.display = 'none';
-    addNoteBtn.style.display = 'none';
-    notesContainer.style.display = 'none';
-
-    privateArea.style.display = 'flex';
-    privateUserTitle.textContent = `Private Notizen von ${user}`;
-    loadPrivateNotes(user);
-    renderPrivateNotes();
-  }
-
-  // Privatbereich verlassen
-  function leavePrivateArea(){
-    privatBtn.style.display = 'inline-block';
-    adminBtn.style.display = 'inline-block';
-    noteInput.style.display = 'inline-block';
-    addNoteBtn.style.display = 'inline-block';
-    notesContainer.style.display = 'flex';
-
-    privateArea.style.display = 'none';
-    currentPrivateUser = null;
-    privateNotes = [];
-  }
-
-  // Initiales Rendern
-  renderPublicNotes();
-
-  // Enter Taste für Eingabefelder (öffentlich & privat)
-  noteInput.addEventListener('keydown', e => {
-    if(e.key === 'Enter') addNoteBtn.click();
-  });
-  privateNoteInput.addEventListener('keydown', e => {
-    if(e.key === 'Enter') addPrivateNoteBtn.click();
-  });
-  privatePasswordInput.addEventListener('keydown', e => {
-    if(e.key === 'Enter') privatePasswordSubmitBtn.click();
-  });
-  adminPasswordInput.addEventListener('keydown', e => {
-    if(e.key === 'Enter') adminLoginBtn.click();
-  });
-</script>
-
+    renderNotes();
+  </script>
 </body>
 </html>
